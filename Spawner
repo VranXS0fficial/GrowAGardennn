@@ -1,0 +1,135 @@
+-- LocalScript (placed in StarterGui)
+local player = game.Players.LocalPlayer
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+-- Main frame setup (smaller rectangular size)
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 220, 0, 100)
+mainFrame.Position = UDim2.new(0.5, -110, 0.5, -50)
+mainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = screenGui
+
+-- Neon Galaxy Background
+local gradient = Instance.new("UIGradient", mainFrame)
+gradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 255)),
+    ColorSequenceKeypoint.new(0.2, Color3.fromRGB(0, 255, 255)),
+    ColorSequenceKeypoint.new(0.4, Color3.fromRGB(0, 0, 255)),
+    ColorSequenceKeypoint.new(0.6, Color3.fromRGB(255, 0, 255)),
+    ColorSequenceKeypoint.new(0.8, Color3.fromRGB(128, 0, 128)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
+})
+gradient.Rotation = 45
+
+-- Rounded corners
+local mainFrameCorner = Instance.new("UICorner", mainFrame)
+mainFrameCorner.CornerRadius = UDim.new(0, 12)
+
+-- Rainbow border stroke
+local rainbowStroke = Instance.new("UIStroke")
+rainbowStroke.Thickness = 5
+rainbowStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+rainbowStroke.Parent = mainFrame
+
+local function updateRainbowStroke()
+    local hue = tick() % 6 / 6
+    rainbowStroke.Color = Color3.fromHSV(hue, 1, 1)
+end
+game:GetService("RunService").Heartbeat:Connect(updateRainbowStroke)
+
+-- Draggable functionality
+local dragging, dragStart, startPos
+local function onDragStart(input)
+    dragging, dragStart, startPos = true, input.Position, mainFrame.Position
+end
+local function onDrag(input)
+    if dragging then
+        local delta = input.Position - dragStart
+        mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end
+mainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        onDragStart(input)
+    end
+end)
+mainFrame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        onDrag(input)
+    end
+end)
+mainFrame.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = false
+    end
+end)
+
+-- Title setup
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(0, 200, 0, 40)
+title.Position = UDim2.new(0.5, -100, 0.5, -35)
+title.Text = "ZrSpace Hub"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.BackgroundTransparency = 1
+title.TextSize = 24
+title.TextScaled = true
+title.Font = Enum.Font.GothamBold
+title.Parent = mainFrame
+
+-- Button setup
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(0, 180, 0, 35)
+button.Position = UDim2.new(0.5, -90, 0.5, 10)
+button.Text = "Toggle Script"
+button.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
+button.TextColor3 = Color3.fromRGB(255, 255, 255)
+button.TextScaled = true
+button.Font = Enum.Font.GothamBold
+button.BorderSizePixel = 0
+button.Parent = mainFrame
+
+local buttonCorner = Instance.new("UICorner", button)
+buttonCorner.CornerRadius = UDim.new(0, 8)
+
+button.MouseEnter:Connect(function()
+    button.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+end)
+button.MouseLeave:Connect(function()
+    button.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
+end)
+
+-- Toggle external script
+local scriptLoaded = false
+local createdGui -- store any GUI or instance created by the script
+
+local function toggleExternalScript()
+    if not scriptLoaded then
+        local success, result = pcall(function()
+            return loadstring(game:HttpGet("https://raw.githubusercontent.com/SpaceScriptHUB/petspawner/refs/heads/main/GrowaGardenVisual", true))()
+        end)
+
+        if success then
+            scriptLoaded = true
+            createdGui = result -- only works if the script returns something
+            print("External script executed.")
+        else
+            warn("Failed to load external script:", result)
+        end
+    else
+        -- Remove or hide what the script added
+        if createdGui and typeof(createdGui) == "Instance" and createdGui:IsA("GuiObject") then
+            createdGui:Destroy()
+        else
+            local existing = player:FindFirstChild("PlayerGui"):FindFirstChild("GrowaGarden") -- example name
+            if existing then
+                existing:Destroy()
+            end
+        end
+        scriptLoaded = false
+        print("External script removed.")
+    end
+end
+
+button.MouseButton1Click:Connect(toggleExternalScript)
